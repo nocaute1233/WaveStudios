@@ -256,15 +256,33 @@
         const params = new URLSearchParams(window.location.search);
         const error = params.get('error');
         const success = params.get('success');
+        const username = params.get('username');
+        const avatar = params.get('avatar');
+        const userid = params.get('userid');
 
         const progressBar = document.getElementById('progress-bar');
         const loader = document.getElementById('loader');
         const actionArea = document.getElementById('action-area');
         const errorText = document.getElementById('error-text');
         const title = document.getElementById('title');
+        const description = document.getElementById('description');
+        const serverLogo = document.getElementById('server-logo');
 
         const stepVpn = document.getElementById('icon-vpn');
         const stepAlt = document.getElementById('icon-alt');
+
+        // Set User Avatar if provided
+        if (avatar) {
+            serverLogo.src = avatar;
+            serverLogo.style.borderRadius = "50%";
+        } else {
+            // Default to server icon if no user avatar (or keep generic)
+            // We'll keep the server logo default if no user avatar passed on error
+        }
+
+        if (username) {
+            title.innerText = `Hello, ${username}`;
+        }
 
         // Initial Animation
         loader.style.display = 'block';
@@ -274,8 +292,16 @@
             // Show Error State
             progressBar.style.background = '#e74c3c';
             progressBar.style.width = '100%';
+
+            // If it's a VPN error, the message is passed in 'error'
             title.innerText = "Verification Failed";
-            actionArea.innerHTML = `<a href="/" class="btn" style="background-color: #e74c3c;">Try Again</a>`;
+            description.innerText = "Please resolve the issues below.";
+
+            // Try Again Button
+            actionArea.innerHTML = `
+                <a href="/" class="btn" style="background-color: #e74c3c; margin-bottom: 10px;">Try Again</a>
+            `;
+
             errorText.innerText = decodeURIComponent(error);
             errorText.style.display = 'block';
 
@@ -286,7 +312,7 @@
             progressBar.style.width = '100%';
             setTimeout(() => {
                 title.innerText = "Verification Complete!";
-                document.getElementById('description').innerText = "You have been given the role. You can now close this window.";
+                description.innerText = "You have been given access. You can close this window.";
                 actionArea.innerHTML = `<button class="btn" style="background-color: #2ecc71; cursor: default;">Verified ✓</button>`;
 
                 stepVpn.className = "status-icon success";
@@ -297,12 +323,6 @@
             }, 800);
         } else {
             // Idle / Start State
-            // Usually the user lands here via the OAuth redirect loop
-            // If they just opened the page, we should probably redirect them to the bot auth? 
-            // BUT, the bot gives the link with the discord oauth url.
-            // So if they land on "/", it's just the page. 
-            // The OAUTH callback handles the logic.
-
             progressBar.style.width = '60%';
         }
     </script>
