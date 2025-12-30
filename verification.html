@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wave Studios Verification</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #0f1014;
+            --card-bg: #1e1f24;
+            --text-color: #ffffff;
+            --accent-color: #5865F2;
+            /* Discord Blurple */
+            --success-color: #2ecc71;
+            --error-color: #e74c3c;
+            --secondary-text: #b9bbbe;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* Animated Background */
+        .background-blobs {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            overflow: hidden;
+        }
+
+        .blob {
+            position: absolute;
+            width: 400px;
+            height: 400px;
+            background: radial-gradient(circle, rgba(88, 101, 242, 0.2) 0%, rgba(0, 0, 0, 0) 70%);
+            border-radius: 50%;
+            animation: moveBlobs 10s infinite alternate ease-in-out;
+        }
+
+        .blob:nth-child(1) {
+            top: 10%;
+            left: 20%;
+        }
+
+        .blob:nth-child(2) {
+            bottom: 20%;
+            right: 10%;
+            animation-duration: 15s;
+        }
+
+        @keyframes moveBlobs {
+            0% {
+                transform: translate(0, 0) scale(1);
+            }
+
+            100% {
+                transform: translate(50px, -50px) scale(1.1);
+            }
+        }
+
+        .container {
+            background-color: var(--card-bg);
+            padding: 2rem 3rem;
+            border-radius: 12px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+            text-align: center;
+            width: 400px;
+            max-width: 90%;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            transition: transform 0.3s ease;
+        }
+
+        .logo {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            margin-bottom: 1.5rem;
+            border: 3px solid var(--accent-color);
+            box-shadow: 0 0 15px var(--accent-color);
+        }
+
+        h1 {
+            font-size: 1.8rem;
+            margin-bottom: 0.5rem;
+            font-weight: 700;
+        }
+
+        p {
+            color: var(--secondary-text);
+            margin-bottom: 2rem;
+            line-height: 1.5;
+        }
+
+        .status-box {
+            background: rgba(0, 0, 0, 0.2);
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 1.5rem;
+            text-align: left;
+            font-size: 0.9rem;
+        }
+
+        .status-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 0.5rem;
+        }
+
+        .status-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .status-icon {
+            width: 16px;
+            height: 16px;
+            margin-right: 10px;
+            border-radius: 50%;
+            background: #444;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 10px;
+        }
+
+        .status-icon.pending {
+            background: #f1c40f;
+            color: black;
+        }
+
+        .status-icon.success {
+            background: var(--success-color);
+        }
+
+        .status-icon.error {
+            background: var(--error-color);
+        }
+
+        .loader-container {
+            position: relative;
+            height: 6px;
+            background: #333;
+            border-radius: 3px;
+            overflow: hidden;
+            margin-top: 1rem;
+            display: none;
+            /* Hidden by default */
+        }
+
+        .loader-bar {
+            position: absolute;
+            left: 0;
+            top: 0;
+            height: 100%;
+            width: 0%;
+            background: var(--accent-color);
+            transition: width 0.5s ease;
+        }
+
+        .btn {
+            background-color: var(--accent-color);
+            color: white;
+            border: none;
+            padding: 0.8rem 1.5rem;
+            border-radius: 6px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            width: 100%;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(88, 101, 242, 0.4);
+        }
+
+        .footer {
+            margin-top: 1.5rem;
+            font-size: 0.8rem;
+            color: #555;
+        }
+
+        /* Error Message Style */
+        .error-msg {
+            color: var(--error-color);
+            margin-top: 1rem;
+            font-size: 0.9rem;
+            display: none;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="background-blobs">
+        <div class="blob"></div>
+        <div class="blob"></div>
+    </div>
+
+    <div class="container" id="main-container">
+        <!-- Logo (Try to load server icon or default) -->
+        <img src="https://cdn.discordapp.com/embed/avatars/0.png" alt="Server Logo" class="logo" id="server-logo">
+
+        <h1 id="title">Wave Studios</h1>
+        <p id="description">Verification required to access the server.</p>
+
+        <div class="status-box">
+            <div class="status-item">
+                <div class="status-icon success">✓</div>
+                <span>Connect to Discord</span>
+            </div>
+            <div class="status-item" id="step-vpn">
+                <div class="status-icon pending" id="icon-vpn">?</div>
+                <span>Security Check (VPN/Proxy)</span>
+            </div>
+            <div class="status-item" id="step-alt">
+                <div class="status-icon pending" id="icon-alt">?</div>
+                <span>Identity Verification (Anti-Alt)</span>
+            </div>
+        </div>
+
+        <div class="loader-container" id="loader">
+            <div class="loader-bar" id="progress-bar"></div>
+        </div>
+
+        <div id="action-area">
+            <!-- Button will be injected if needed, usually OAuth flow starts automatically or via bot link -->
+            <p style="font-size: 0.9rem; opacity: 0.7;">Processing verification...</p>
+        </div>
+
+        <div class="error-msg" id="error-text"></div>
+
+        <div class="footer">
+            Protected by SafeGuard System • 2025
+        </div>
+    </div>
+
+    <script>
+        // Parse URL Params
+        const params = new URLSearchParams(window.location.search);
+        const error = params.get('error');
+        const success = params.get('success');
+
+        const progressBar = document.getElementById('progress-bar');
+        const loader = document.getElementById('loader');
+        const actionArea = document.getElementById('action-area');
+        const errorText = document.getElementById('error-text');
+        const title = document.getElementById('title');
+
+        const stepVpn = document.getElementById('icon-vpn');
+        const stepAlt = document.getElementById('icon-alt');
+
+        // Initial Animation
+        loader.style.display = 'block';
+        setTimeout(() => { progressBar.style.width = '30%'; }, 100);
+
+        if (error) {
+            // Show Error State
+            progressBar.style.background = '#e74c3c';
+            progressBar.style.width = '100%';
+            title.innerText = "Verification Failed";
+            actionArea.innerHTML = `<a href="/" class="btn" style="background-color: #e74c3c;">Try Again</a>`;
+            errorText.innerText = decodeURIComponent(error);
+            errorText.style.display = 'block';
+
+            stepVpn.className = "status-icon error";
+            stepVpn.innerText = "✗";
+        } else if (success) {
+            // Show Success State
+            progressBar.style.width = '100%';
+            setTimeout(() => {
+                title.innerText = "Verification Complete!";
+                document.getElementById('description').innerText = "You have been given the role. You can now close this window.";
+                actionArea.innerHTML = `<button class="btn" style="background-color: #2ecc71; cursor: default;">Verified ✓</button>`;
+
+                stepVpn.className = "status-icon success";
+                stepVpn.innerText = "✓";
+
+                stepAlt.className = "status-icon success";
+                stepAlt.innerText = "✓";
+            }, 800);
+        } else {
+            // Idle / Start State
+            // Usually the user lands here via the OAuth redirect loop
+            // If they just opened the page, we should probably redirect them to the bot auth? 
+            // BUT, the bot gives the link with the discord oauth url.
+            // So if they land on "/", it's just the page. 
+            // The OAUTH callback handles the logic.
+
+            progressBar.style.width = '60%';
+        }
+    </script>
+</body>
+
+</html>
