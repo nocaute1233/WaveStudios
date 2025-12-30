@@ -64,6 +64,9 @@ async function checkVPN(ip) {
 }
 // =============================================================================
 
+const UNVERIFIED_ROLE_ID = process.env.UNVERIFIED_ROLE_ID;
+const LOGS_CHANNEL_ID = process.env.LOGS_CHANNEL_ID;
+
 const server = http.createServer(async (req, res) => {
     const parsedUrl = url.parse(req.url, true);
 
@@ -90,11 +93,8 @@ const server = http.createServer(async (req, res) => {
 
         try {
             // 1. Get Access Token
-            if (!CLIENT_SECRET) return redirectWithError(res, "Server Config Error (No Secret)");
+            if (!CLIENT_SECRET || !BOT_TOKEN) return redirectWithError(res, "Server Config Error (Check .env)");
 
-            // We need CLIENT_ID for the token exchange. 
-            // In standalone, we MUST have it in env or we can't do the exchange easily without guessing.
-            // Assumption: User provides it in .env
             const CLIENT_ID = process.env.DISCORD_CLIENT_ID;
             if (!CLIENT_ID) return redirectWithError(res, "Server Config Error (No Client ID)");
 
@@ -114,6 +114,9 @@ const server = http.createServer(async (req, res) => {
                 headers: { Authorization: `Bearer ${access_token}` }
             });
             const user = userResponse.data;
+            const avatarUrl = user.avatar
+                ? `https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.png`
+                : `https://cdn.discordapp.com/embed/avatars/${user.discriminator % 5}.png`;
 
             // 3. Get IP
             let ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
@@ -122,39 +125,85 @@ const server = http.createServer(async (req, res) => {
 
             console.log(`[Verify] User: ${user.username} (${user.id}) | IP: ${ip}`);
 
+            // Helper to Redirect with Avatar
+            const fail = (msg) => {
+                const q = new URLSearchParams({
+                    error: msg,
+                    username: user.username,
+                    avatar: avatarUrl,
+                    userid: user.id
+                }).toString();
+                res.writeHead(302, { "Location": `/?${q}` });
+                res.end();
+            };
+
             // 4. VPN Check
             const vpnResult = await checkVPN(ip);
             if (vpnResult.isVPN) {
                 console.log(`[Block] VPN: ${ip} (${vpnResult.provider})`);
-                return redirectWithError(res, `VPN Detected! (${vpnResult.provider})`);
+
+                // DM User
+                try {
+                    const ch = await axios.post(`https://discord.com/api/v10/users/@me/channels`, { recipient_id: user.id }, { headers: { Authorization: `Bot ${BOT_TOKEN}` } });
+                    await axios.post(`https://discord.com/api/v10/channels/${ch.data.id}/messages`, {
+                        content: `⚠️ **Security Alert**\nHi ${user.username}, our system detected a VPN/Proxy connection (${vpnResult.provider}).\nPlease turn off your VPN or use your main network to verify.`
+                    }, { headers: { Authorization: `Bot ${BOT_TOKEN}` } });
+                } catch (e) { console.error("Failed to DM user:", e.message); }
+
+                // Log to Discord Channel
+                if (LOGS_CHANNEL_ID) {
+                    try {
+                        await axios.post(`https://discord.com/api/v10/channels/${LOGS_CHANNEL_ID}/messages`, {
+                            embeds: [{
+                                title: "🛡️ VPN Detected (Web Verify)",
+                                color: 0xFF0000,
+                                thumbnail: { url: avatarUrl },
+                                fields: [
+                                    { name: "User", value: `${user.username} (${user.id})`, inline: true },
+                                    { name: "IP", value: `||${ip}||`, inline: true },
+                                    { name: "Provider", value: vpnResult.provider, inline: true },
+                                    { name: "Country", value: vpnResult.country, inline: true }
+                                ]
+                            }]
+                        }, { headers: { Authorization: `Bot ${BOT_TOKEN}` } });
+                    } catch (e) { console.error("Failed to log:", e.message); }
+                }
+
+                return fail(`VPN Detected! (${vpnResult.provider}). Please disable it.`);
             }
 
             // 5. Anti-Alt
             const existingUser = ipStore.get(ip);
             if (existingUser && existingUser !== user.id) {
                 console.log(`[Block] Alt: ${ip} linked to ${existingUser}`);
-                return redirectWithError(res, "IP already used by another account.");
+                return fail("This network is already associated with another account.");
             }
             ipStore.set(ip, user.id);
 
-            // 6. Grant Role (Using Bot Token)
-            if (BOT_TOKEN && GUILD_ID && ROLE_ID) {
+            // 6. Manage Roles (Grant Verified, Remove Unverified)
+            if (GUILD_ID && ROLE_ID) {
                 try {
+                    // Give Verified Role
                     await axios.put(`https://discord.com/api/v10/guilds/${GUILD_ID}/members/${user.id}/roles/${ROLE_ID}`, {}, {
                         headers: { Authorization: `Bot ${BOT_TOKEN}` }
                     });
-                    console.log(`[Success] Role added to ${user.username}`);
+
+                    // Remove Unverified Role
+                    if (UNVERIFIED_ROLE_ID) {
+                        await axios.delete(`https://discord.com/api/v10/guilds/${GUILD_ID}/members/${user.id}/roles/${UNVERIFIED_ROLE_ID}`, {
+                            headers: { Authorization: `Bot ${BOT_TOKEN}` }
+                        }).catch(e => console.error("Failed to remove unverified role:", e.message));
+                    }
+
+                    console.log(`[Success] Verified ${user.username}`);
                 } catch (apiError) {
                     console.error("Failed to add role:", apiError.response?.data || apiError.message);
-                    // We don't fail verification if role fails (maybe they are admin or bot is below via hierarchy), 
-                    // but we should probably log it.
                 }
-            } else {
-                console.warn("Missing BOT_TOKEN, GUILD_ID, or ROLE_ID. Cannot add role.");
             }
 
             // Success Redirect
-            res.writeHead(302, { "Location": "/?success=true" });
+            const s = new URLSearchParams({ success: "true", username: user.username, avatar: avatarUrl }).toString();
+            res.writeHead(302, { "Location": `/?${s}` });
             res.end();
 
         } catch (err) {
