@@ -5,328 +5,647 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Wave Studios Verification</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
         :root {
-            --bg-color: #0f1014;
-            --card-bg: #1e1f24;
-            --text-color: #ffffff;
-            --accent-color: #5865F2;
-            /* Discord Blurple */
-            --success-color: #2ecc71;
-            --error-color: #e74c3c;
-            --secondary-text: #b9bbbe;
+            --bg-primary: #0a0b0f;
+            --bg-secondary: #13141a;
+            --bg-card: #1a1b23;
+            --text-primary: #ffffff;
+            --text-secondary: #a0a3bd;
+            --accent-primary: #5865F2;
+            --accent-secondary: #7289da;
+            --success: #43b581;
+            --error: #f04747;
+            --warning: #faa61a;
+            --border-color: rgba(255, 255, 255, 0.08);
+            --glow-color: rgba(88, 101, 242, 0.4);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
         }
 
         body {
-            font-family: 'Inter', sans-serif;
-            background-color: var(--bg-color);
-            color: var(--text-color);
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #0a0b0f 0%, #13141a 50%, #0f1015 100%);
+            color: var(--text-primary);
+            min-height: 100vh;
             display: flex;
             justify-content: center;
             align-items: center;
-            height: 100vh;
-            margin: 0;
-            overflow: hidden;
+            overflow-x: hidden;
             position: relative;
         }
 
-        /* Animated Background */
-        .background-blobs {
-            position: absolute;
+        /* Animated Background Effects */
+        .background-effects {
+            position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            z-index: -1;
+            z-index: 0;
             overflow: hidden;
+            pointer-events: none;
         }
 
-        .blob {
+        .gradient-orb {
             position: absolute;
+            border-radius: 50%;
+            filter: blur(80px);
+            opacity: 0.3;
+            animation: float 20s infinite ease-in-out;
+        }
+
+        .orb-1 {
+            width: 500px;
+            height: 500px;
+            background: radial-gradient(circle, rgba(88, 101, 242, 0.4) 0%, transparent 70%);
+            top: -10%;
+            left: -10%;
+            animation-delay: 0s;
+        }
+
+        .orb-2 {
             width: 400px;
             height: 400px;
-            background: radial-gradient(circle, rgba(88, 101, 242, 0.2) 0%, rgba(0, 0, 0, 0) 70%);
-            border-radius: 50%;
-            animation: moveBlobs 10s infinite alternate ease-in-out;
+            background: radial-gradient(circle, rgba(114, 137, 218, 0.3) 0%, transparent 70%);
+            bottom: -5%;
+            right: -5%;
+            animation-delay: -7s;
         }
 
-        .blob:nth-child(1) {
-            top: 10%;
-            left: 20%;
+        .orb-3 {
+            width: 350px;
+            height: 350px;
+            background: radial-gradient(circle, rgba(88, 101, 242, 0.2) 0%, transparent 70%);
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            animation-delay: -14s;
         }
 
-        .blob:nth-child(2) {
-            bottom: 20%;
-            right: 10%;
-            animation-duration: 15s;
-        }
+        @keyframes float {
 
-        @keyframes moveBlobs {
-            0% {
+            0%,
+            100% {
                 transform: translate(0, 0) scale(1);
             }
 
-            100% {
-                transform: translate(50px, -50px) scale(1.1);
+            33% {
+                transform: translate(30px, -30px) scale(1.1);
+            }
+
+            66% {
+                transform: translate(-20px, 20px) scale(0.9);
             }
         }
 
+        /* Main Container */
         .container {
-            background-color: var(--card-bg);
-            padding: 2rem 3rem;
-            border-radius: 12px;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
-            text-align: center;
-            width: 400px;
-            max-width: 90%;
-            border: 1px solid rgba(255, 255, 255, 0.05);
-            transition: transform 0.3s ease;
+            position: relative;
+            z-index: 1;
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 24px;
+            padding: 3rem 2.5rem;
+            width: 480px;
+            max-width: 92%;
+            box-shadow:
+                0 20px 60px rgba(0, 0, 0, 0.5),
+                0 0 0 1px rgba(255, 255, 255, 0.05) inset;
+            backdrop-filter: blur(20px);
+            animation: slideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Logo */
+        .logo-container {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 2rem;
         }
 
         .logo {
-            width: 80px;
-            height: 80px;
+            width: 90px;
+            height: 90px;
             border-radius: 50%;
-            margin-bottom: 1.5rem;
-            border: 3px solid var(--accent-color);
-            box-shadow: 0 0 15px var(--accent-color);
+            border: 3px solid var(--accent-primary);
+            box-shadow:
+                0 0 30px var(--glow-color),
+                0 0 60px rgba(88, 101, 242, 0.2);
+            transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            animation: pulse 3s infinite ease-in-out;
         }
 
+        .logo:hover {
+            transform: scale(1.05) rotate(5deg);
+            box-shadow:
+                0 0 40px var(--glow-color),
+                0 0 80px rgba(88, 101, 242, 0.3);
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                box-shadow:
+                    0 0 30px var(--glow-color),
+                    0 0 60px rgba(88, 101, 242, 0.2);
+            }
+
+            50% {
+                box-shadow:
+                    0 0 40px var(--glow-color),
+                    0 0 80px rgba(88, 101, 242, 0.3);
+            }
+        }
+
+        /* Typography */
         h1 {
-            font-size: 1.8rem;
-            margin-bottom: 0.5rem;
-            font-weight: 700;
+            font-size: 2rem;
+            font-weight: 800;
+            text-align: center;
+            margin-bottom: 0.75rem;
+            background: linear-gradient(135deg, #ffffff 0%, #a0a3bd 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            letter-spacing: -0.5px;
         }
 
-        p {
-            color: var(--secondary-text);
+        .subtitle {
+            text-align: center;
+            color: var(--text-secondary);
+            font-size: 0.95rem;
             margin-bottom: 2rem;
-            line-height: 1.5;
+            line-height: 1.6;
+            font-weight: 500;
         }
 
+        /* Status Box */
         .status-box {
-            background: rgba(0, 0, 0, 0.2);
-            padding: 1rem;
-            border-radius: 8px;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 1.5rem;
             margin-bottom: 1.5rem;
-            text-align: left;
-            font-size: 0.9rem;
+            backdrop-filter: blur(10px);
         }
 
         .status-item {
             display: flex;
             align-items: center;
-            margin-bottom: 0.5rem;
+            padding: 0.75rem 0;
+            transition: all 0.3s ease;
         }
 
-        .status-item:last-child {
-            margin-bottom: 0;
+        .status-item:not(:last-child) {
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
         }
 
         .status-icon {
-            width: 16px;
-            height: 16px;
-            margin-right: 10px;
+            width: 32px;
+            height: 32px;
+            min-width: 32px;
+            margin-right: 1rem;
             border-radius: 50%;
-            background: #444;
             display: flex;
             justify-content: center;
             align-items: center;
-            font-size: 10px;
+            font-size: 14px;
+            font-weight: 700;
+            transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
         }
 
         .status-icon.pending {
-            background: #f1c40f;
-            color: black;
+            background: linear-gradient(135deg, #faa61a 0%, #f57c00 100%);
+            box-shadow: 0 4px 15px rgba(250, 166, 26, 0.3);
+            animation: spin 2s linear infinite;
         }
 
         .status-icon.success {
-            background: var(--success-color);
+            background: linear-gradient(135deg, #43b581 0%, #2d7d46 100%);
+            box-shadow: 0 4px 15px rgba(67, 181, 129, 0.3);
+            animation: successPop 0.5s cubic-bezier(0.16, 1, 0.3, 1);
         }
 
         .status-icon.error {
-            background: var(--error-color);
+            background: linear-gradient(135deg, #f04747 0%, #c92a2a 100%);
+            box-shadow: 0 4px 15px rgba(240, 71, 71, 0.3);
+            animation: shake 0.5s ease;
         }
 
-        .loader-container {
-            position: relative;
-            height: 6px;
-            background: #333;
-            border-radius: 3px;
+        @keyframes spin {
+            from {
+                transform: rotate(0deg);
+            }
+
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        @keyframes successPop {
+            0% {
+                transform: scale(0);
+            }
+
+            50% {
+                transform: scale(1.2);
+            }
+
+            100% {
+                transform: scale(1);
+            }
+        }
+
+        @keyframes shake {
+
+            0%,
+            100% {
+                transform: translateX(0);
+            }
+
+            25% {
+                transform: translateX(-5px);
+            }
+
+            75% {
+                transform: translateX(5px);
+            }
+        }
+
+        .status-text {
+            font-size: 0.95rem;
+            font-weight: 500;
+            color: var(--text-primary);
+        }
+
+        /* Progress Bar */
+        .progress-container {
+            height: 8px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 10px;
             overflow: hidden;
-            margin-top: 1rem;
-            display: none;
-            /* Hidden by default */
+            margin-bottom: 1.5rem;
+            border: 1px solid var(--border-color);
         }
 
-        .loader-bar {
-            position: absolute;
-            left: 0;
-            top: 0;
+        .progress-bar {
             height: 100%;
             width: 0%;
-            background: var(--accent-color);
-            transition: width 0.5s ease;
+            background: linear-gradient(90deg, var(--accent-primary) 0%, var(--accent-secondary) 100%);
+            border-radius: 10px;
+            transition: width 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+            box-shadow: 0 0 20px var(--glow-color);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .progress-bar::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+            animation: shimmer 2s infinite;
+        }
+
+        @keyframes shimmer {
+            0% {
+                transform: translateX(-100%);
+            }
+
+            100% {
+                transform: translateX(100%);
+            }
+        }
+
+        .progress-bar.error {
+            background: linear-gradient(90deg, var(--error) 0%, #c92a2a 100%);
+            box-shadow: 0 0 20px rgba(240, 71, 71, 0.4);
+        }
+
+        .progress-bar.success {
+            background: linear-gradient(90deg, var(--success) 0%, #2d7d46 100%);
+            box-shadow: 0 0 20px rgba(67, 181, 129, 0.4);
+        }
+
+        /* Action Area */
+        .action-area {
+            margin-bottom: 1.5rem;
         }
 
         .btn {
-            background-color: var(--accent-color);
-            color: white;
-            border: none;
-            padding: 0.8rem 1.5rem;
-            border-radius: 6px;
-            font-size: 1rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s;
             width: 100%;
+            padding: 1rem 1.5rem;
+            border: none;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
             text-decoration: none;
             display: inline-block;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+            letter-spacing: 0.3px;
         }
 
-        .btn:hover {
+        .btn-primary {
+            background: linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-secondary) 100%);
+            color: white;
+            box-shadow: 0 8px 25px rgba(88, 101, 242, 0.3);
+        }
+
+        .btn-primary:hover {
             transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(88, 101, 242, 0.4);
+            box-shadow: 0 12px 35px rgba(88, 101, 242, 0.4);
         }
 
-        .footer {
-            margin-top: 1.5rem;
-            font-size: 0.8rem;
-            color: #555;
+        .btn-primary:active {
+            transform: translateY(0);
         }
 
-        /* Error Message Style */
+        .btn-error {
+            background: linear-gradient(135deg, var(--error) 0%, #c92a2a 100%);
+            color: white;
+            box-shadow: 0 8px 25px rgba(240, 71, 71, 0.3);
+        }
+
+        .btn-error:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 35px rgba(240, 71, 71, 0.4);
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, var(--success) 0%, #2d7d46 100%);
+            color: white;
+            box-shadow: 0 8px 25px rgba(67, 181, 129, 0.3);
+            cursor: default;
+        }
+
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.2);
+            transform: translate(-50%, -50%);
+            transition: width 0.6s, height 0.6s;
+        }
+
+        .btn:hover::before {
+            width: 300px;
+            height: 300px;
+        }
+
+        .btn span {
+            position: relative;
+            z-index: 1;
+        }
+
+        /* Error Message */
         .error-msg {
-            color: var(--error-color);
-            margin-top: 1rem;
+            background: rgba(240, 71, 71, 0.1);
+            border: 1px solid rgba(240, 71, 71, 0.3);
+            border-radius: 12px;
+            padding: 1rem;
+            margin-bottom: 1.5rem;
+            color: var(--error);
             font-size: 0.9rem;
+            font-weight: 500;
             display: none;
+            animation: slideDown 0.4s ease;
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Footer */
+        .footer {
+            text-align: center;
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            opacity: 0.6;
+            font-weight: 500;
+        }
+
+        /* Loading State */
+        .loading-text {
+            text-align: center;
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            font-weight: 500;
+            animation: fadeInOut 2s infinite;
+        }
+
+        @keyframes fadeInOut {
+
+            0%,
+            100% {
+                opacity: 0.5;
+            }
+
+            50% {
+                opacity: 1;
+            }
+        }
+
+        /* Responsive */
+        @media (max-width: 600px) {
+            .container {
+                padding: 2rem 1.5rem;
+            }
+
+            h1 {
+                font-size: 1.75rem;
+            }
+
+            .logo {
+                width: 75px;
+                height: 75px;
+            }
+        }
+
+        /* Success Confetti Effect */
+        @keyframes confetti {
+            0% {
+                transform: translateY(0) rotate(0deg);
+                opacity: 1;
+            }
+
+            100% {
+                transform: translateY(100vh) rotate(720deg);
+                opacity: 0;
+            }
         }
     </style>
 </head>
 
 <body>
-
-    <div class="background-blobs">
-        <div class="blob"></div>
-        <div class="blob"></div>
+    <div class="background-effects">
+        <div class="gradient-orb orb-1"></div>
+        <div class="gradient-orb orb-2"></div>
+        <div class="gradient-orb orb-3"></div>
     </div>
 
     <div class="container" id="main-container">
-        <!-- Logo (Try to load server icon or default) -->
-        <img src="https://cdn.discordapp.com/embed/avatars/0.png" alt="Server Logo" class="logo" id="server-logo">
+        <div class="logo-container">
+            <img src="https://cdn.discordapp.com/embed/avatars/0.png" alt="Wave Studios" class="logo" id="server-logo">
+        </div>
 
         <h1 id="title">Wave Studios</h1>
-        <p id="description">Verification required to access the server.</p>
+        <p class="subtitle" id="description">Secure verification required to access the server.</p>
 
         <div class="status-box">
             <div class="status-item">
                 <div class="status-icon success">✓</div>
-                <span>Connect to Discord</span>
+                <span class="status-text">Connect to Discord</span>
             </div>
-            <div class="status-item" id="step-vpn">
-                <div class="status-icon pending" id="icon-vpn">?</div>
-                <span>Security Check (VPN/Proxy)</span>
+            <div class="status-item">
+                <div class="status-icon pending" id="icon-vpn">⟳</div>
+                <span class="status-text">Security Check (VPN/Proxy)</span>
             </div>
-            <div class="status-item" id="step-alt">
-                <div class="status-icon pending" id="icon-alt">?</div>
-                <span>Identity Verification (Anti-Alt)</span>
+            <div class="status-item">
+                <div class="status-icon pending" id="icon-alt">⟳</div>
+                <span class="status-text">Identity Verification</span>
             </div>
         </div>
 
-        <div class="loader-container" id="loader">
-            <div class="loader-bar" id="progress-bar"></div>
-        </div>
-
-        <div id="action-area">
-            <!-- Button will be injected if needed, usually OAuth flow starts automatically or via bot link -->
-            <p style="font-size: 0.9rem; opacity: 0.7;">Processing verification...</p>
+        <div class="progress-container">
+            <div class="progress-bar" id="progress-bar"></div>
         </div>
 
         <div class="error-msg" id="error-text"></div>
 
+        <div class="action-area" id="action-area">
+            <p class="loading-text">Processing verification...</p>
+        </div>
+
         <div class="footer">
-            Protected by Wave Studios System • 2026
+            Protected by Wave Studios Security System • 2026
         </div>
     </div>
 
     <script>
-        // Parse URL Params
+        // Parse URL parameters
         const params = new URLSearchParams(window.location.search);
         const error = params.get('error');
         const success = params.get('success');
         const username = params.get('username');
         const avatar = params.get('avatar');
-        const userid = params.get('userid');
 
+        // Elements
         const progressBar = document.getElementById('progress-bar');
-        const loader = document.getElementById('loader');
         const actionArea = document.getElementById('action-area');
         const errorText = document.getElementById('error-text');
         const title = document.getElementById('title');
         const description = document.getElementById('description');
         const serverLogo = document.getElementById('server-logo');
+        const iconVpn = document.getElementById('icon-vpn');
+        const iconAlt = document.getElementById('icon-alt');
 
-        const stepVpn = document.getElementById('icon-vpn');
-        const stepAlt = document.getElementById('icon-alt');
-
-        // Set User Avatar if provided
+        // Update avatar if provided
         if (avatar) {
             serverLogo.src = avatar;
-            serverLogo.style.borderRadius = "50%";
-        } else {
-            // Default to server icon if no user avatar (or keep generic)
-            // We'll keep the server logo default if no user avatar passed on error
         }
 
+        // Update username if provided
         if (username) {
-            title.innerText = `Hello, ${username}`;
+            title.innerText = `Welcome, ${username}`;
         }
 
-        // Initial Animation
-        loader.style.display = 'block';
-        setTimeout(() => { progressBar.style.width = '30%'; }, 100);
+        // Initial progress animation
+        setTimeout(() => {
+            progressBar.style.width = '30%';
+        }, 100);
 
+        // Handle different states
         if (error) {
-            // Show Error State
-            progressBar.style.background = '#e74c3c';
-            progressBar.style.width = '100%';
-
-            // If it's a VPN error, the message is passed in 'error'
-            title.innerText = "Verification Failed";
-            description.innerText = "Please resolve the issues below.";
-
-            // Try Again Button
-            actionArea.innerHTML = `
-                <a href="/" class="btn" style="background-color: #e74c3c; margin-bottom: 10px;">Try Again</a>
-            `;
-
-            errorText.innerText = decodeURIComponent(error);
-            errorText.style.display = 'block';
-
-            stepVpn.className = "status-icon error";
-            stepVpn.innerText = "✗";
-        } else if (success) {
-            // Show Success State
-            progressBar.style.width = '100%';
+            // Error state
             setTimeout(() => {
-                title.innerText = "Verification Complete!";
-                description.innerText = "You have been given access. You can close this window.";
-                actionArea.innerHTML = `<button class="btn" style="background-color: #2ecc71; cursor: default;">Verified ✓</button>`;
+                progressBar.classList.add('error');
+                progressBar.style.width = '100%';
 
-                stepVpn.className = "status-icon success";
-                stepVpn.innerText = "✓";
+                title.innerText = username ? `Sorry, ${username}` : "Verification Failed";
+                description.innerText = "Please resolve the issue below and try again.";
 
-                stepAlt.className = "status-icon success";
-                stepAlt.innerText = "✓";
-            }, 800);
+                errorText.innerText = decodeURIComponent(error);
+                errorText.style.display = 'block';
+
+                iconVpn.className = "status-icon error";
+                iconVpn.innerText = "✗";
+
+                iconAlt.className = "status-icon error";
+                iconAlt.innerText = "✗";
+
+                actionArea.innerHTML = `
+                    <a href="/" class="btn btn-error">
+                        <span>Try Again</span>
+                    </a>
+                `;
+            }, 500);
+        } else if (success) {
+            // Success state
+            setTimeout(() => {
+                progressBar.classList.add('success');
+                progressBar.style.width = '100%';
+            }, 300);
+
+            setTimeout(() => {
+                title.innerText = username ? `Welcome, ${username}!` : "Verification Complete!";
+                description.innerText = "You now have access to Wave Studios. You can close this window.";
+
+                iconVpn.className = "status-icon success";
+                iconVpn.innerText = "✓";
+
+                iconAlt.className = "status-icon success";
+                iconAlt.innerText = "✓";
+
+                actionArea.innerHTML = `
+                    <button class="btn btn-success">
+                        <span>✓ Verified Successfully</span>
+                    </button>
+                `;
+            }, 1000);
         } else {
-            // Idle / Start State
-            progressBar.style.width = '60%';
+            // Processing state
+            setTimeout(() => {
+                progressBar.style.width = '60%';
+            }, 500);
         }
     </script>
 </body>
 
 </html>
-
