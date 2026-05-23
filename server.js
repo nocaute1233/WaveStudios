@@ -4,8 +4,11 @@ const fs = require("fs");
 const path = require("path");
 const url = require("url");
 const axios = require("axios");
+const { checkVPN } = require("./vpnCheck");
 
 const PORT = process.env.PORT || 3000;
+const VPN_CHECK_ENABLED = process.env.VPN_CHECK_ENABLED !== "false";
+const VPN_BLOCK_VERIFICATION = process.env.VPN_BLOCK_VERIFICATION !== "false";
 const CLIENT_ID = process.env.DISCORD_CLIENT_ID;
 const CLIENT_SECRET = process.env.DISCORD_CLIENT_SECRET;
 const BOT_TOKEN = process.env.DISCORD_BOT_TOKEN;
@@ -176,6 +179,58 @@ const server = http.createServer(async (req, res) => {
                 userid: user.id
             });
 
+            if (VPN_CHECK_ENABLED) {
+                const vpnResult = await checkVPN(ip);
+
+                if (vpnResult.isVPN) {
+                    await sendLog({
+                        title: "VPN / Proxy detetado (verificação web)",
+                        color: 0x2563eb,
+                        thumbnail: { url: avatarUrl },
+                        fields: [
+                            { name: "Utilizador", value: `${user.username} (\`${user.id}\`)`, inline: true },
+                            { name: "IP", value: `||${ip}||`, inline: true },
+                            { name: "Provedor", value: vpnResult.provider || "—", inline: true },
+                            { name: "País", value: vpnResult.country || "—", inline: true },
+                            { name: "Risco", value: `${vpnResult.riskScore || 0}%`, inline: true },
+                            {
+                                name: "Ação",
+                                value: VPN_BLOCK_VERIFICATION ? "Verificação bloqueada" : "Apenas registo (sem bloqueio)",
+                                inline: false
+                            }
+                        ],
+                        footer: { text: "Wave Studios • Anti-VPN" },
+                        timestamp: new Date().toISOString()
+                    });
+
+                    try {
+                        const ch = await axios.post(
+                            "https://discord.com/api/v10/users/@me/channels",
+                            { recipient_id: user.id },
+                            { headers: { Authorization: `Bot ${BOT_TOKEN}` } }
+                        );
+                        await axios.post(
+                            `https://discord.com/api/v10/channels/${ch.data.id}/messages`,
+                            {
+                                content:
+                                    `**Aviso de segurança**\n` +
+                                    `Detetámos VPN/Proxy (${vpnResult.provider}) durante a verificação.\n` +
+                                    (VPN_BLOCK_VERIFICATION
+                                        ? "Desativa a VPN e tenta verificar outra vez com a tua rede normal."
+                                        : "A verificação foi registada na equipa.")
+                            },
+                            { headers: { Authorization: `Bot ${BOT_TOKEN}` } }
+                        );
+                    } catch (dmErr) {
+                        console.warn("[DM VPN]", dmErr.response?.data || dmErr.message);
+                    }
+
+                    if (VPN_BLOCK_VERIFICATION) {
+                        return fail(`VPN/Proxy detetado (${vpnResult.provider}). Desativa e tenta novamente.`);
+                    }
+                }
+            }
+
             const accountAgeDays = (Date.now() - snowflakeToDate(user.id)) / (86400000);
             if (accountAgeDays < MIN_ACCOUNT_DAYS) {
                 await sendLog({
@@ -263,4 +318,8 @@ function snowflakeToDate(id) {
 
 server.listen(PORT, () => {
     console.log(`Verificação Wave Studios • porta ${PORT}`);
+    console.log(`Anti-VPN: ${VPN_CHECK_ENABLED ? "ativo" : "desligado"} | Bloquear verify: ${VPN_BLOCK_VERIFICATION ? "sim" : "não (só logs)"}`);
+    if (VPN_CHECK_ENABLED && !process.env.PROXYCHECK_API_KEY) {
+        console.warn("⚠️ PROXYCHECK_API_KEY em falta — deteção VPN não bloqueia (evita falsos positivos).");
+    }
 });
