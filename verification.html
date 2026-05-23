@@ -1,650 +1,319 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="pt">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Wave Studios Verification</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <meta name="robots" content="noindex, nofollow">
+    <meta name="referrer" content="no-referrer">
+    <title>Verificação • Wave Studios</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         :root {
-            --bg-primary: #0a0b0f;
-            --bg-secondary: #13141a;
-            --bg-card: #1a1b23;
-            --text-primary: #ffffff;
-            --text-secondary: #a0a3bd;
-            --accent-primary: #5865F2;
-            --accent-secondary: #7289da;
-            --success: #43b581;
-            --error: #f04747;
-            --warning: #faa61a;
-            --border-color: rgba(255, 255, 255, 0.08);
-            --glow-color: rgba(88, 101, 242, 0.4);
+            --bg: #070b14;
+            --card: rgba(15, 23, 42, 0.85);
+            --border: rgba(37, 99, 235, 0.25);
+            --blue: #2563eb;
+            --blue-light: #60a5fa;
+            --text: #f1f5f9;
+            --muted: #94a3b8;
+            --ok: #22c55e;
+            --err: #ef4444;
         }
 
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
 
         body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-            background: linear-gradient(135deg, #0a0b0f 0%, #13141a 50%, #0f1015 100%);
-            color: var(--text-primary);
+            font-family: 'DM Sans', system-ui, sans-serif;
+            background: var(--bg);
+            color: var(--text);
             min-height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
+            display: grid;
+            place-items: center;
+            padding: 1.5rem;
             overflow-x: hidden;
-            position: relative;
         }
 
-        /* Animated Background Effects */
-        .background-effects {
+        .bg {
             position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
+            inset: 0;
             z-index: 0;
-            overflow: hidden;
+            background:
+                radial-gradient(ellipse 80% 50% at 50% -20%, rgba(37, 99, 235, 0.35), transparent),
+                radial-gradient(ellipse 60% 40% at 100% 100%, rgba(59, 130, 246, 0.15), transparent);
             pointer-events: none;
         }
 
-        .gradient-orb {
-            position: absolute;
-            border-radius: 50%;
-            filter: blur(80px);
-            opacity: 0.3;
-            animation: float 20s infinite ease-in-out;
-        }
-
-        .orb-1 {
-            width: 500px;
-            height: 500px;
-            background: radial-gradient(circle, rgba(88, 101, 242, 0.4) 0%, transparent 70%);
-            top: -10%;
-            left: -10%;
-            animation-delay: 0s;
-        }
-
-        .orb-2 {
-            width: 400px;
-            height: 400px;
-            background: radial-gradient(circle, rgba(114, 137, 218, 0.3) 0%, transparent 70%);
-            bottom: -5%;
-            right: -5%;
-            animation-delay: -7s;
-        }
-
-        .orb-3 {
-            width: 350px;
-            height: 350px;
-            background: radial-gradient(circle, rgba(88, 101, 242, 0.2) 0%, transparent 70%);
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            animation-delay: -14s;
-        }
-
-        @keyframes float {
-
-            0%,
-            100% {
-                transform: translate(0, 0) scale(1);
-            }
-
-            33% {
-                transform: translate(30px, -30px) scale(1.1);
-            }
-
-            66% {
-                transform: translate(-20px, 20px) scale(0.9);
-            }
-        }
-
-        /* Main Container */
-        .container {
+        .card {
             position: relative;
             z-index: 1;
-            background: var(--bg-card);
-            border: 1px solid var(--border-color);
-            border-radius: 24px;
-            padding: 3rem 2.5rem;
-            width: 480px;
-            max-width: 92%;
-            box-shadow:
-                0 20px 60px rgba(0, 0, 0, 0.5),
-                0 0 0 1px rgba(255, 255, 255, 0.05) inset;
-            backdrop-filter: blur(20px);
-            animation: slideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+            width: 100%;
+            max-width: 440px;
+            padding: 2.5rem 2rem;
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            backdrop-filter: blur(16px);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            animation: rise 0.5s ease-out;
         }
 
-        @keyframes slideUp {
-            from {
-                opacity: 0;
-                transform: translateY(30px);
-            }
-
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
+        @keyframes rise {
+            from { opacity: 0; transform: translateY(16px); }
+            to { opacity: 1; transform: translateY(0); }
         }
 
-        /* Logo */
-        .logo-container {
+        .avatar-wrap {
             display: flex;
             justify-content: center;
-            margin-bottom: 2rem;
+            margin-bottom: 1.25rem;
         }
 
-        .logo {
-            width: 90px;
-            height: 90px;
+        .avatar {
+            width: 88px;
+            height: 88px;
             border-radius: 50%;
-            border: 3px solid var(--accent-primary);
-            box-shadow:
-                0 0 30px var(--glow-color),
-                0 0 60px rgba(88, 101, 242, 0.2);
-            transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-            animation: pulse 3s infinite ease-in-out;
+            border: 3px solid var(--blue);
+            box-shadow: 0 0 32px rgba(37, 99, 235, 0.45);
+            object-fit: cover;
         }
 
-        .logo:hover {
-            transform: scale(1.05) rotate(5deg);
-            box-shadow:
-                0 0 40px var(--glow-color),
-                0 0 80px rgba(88, 101, 242, 0.3);
-        }
-
-        @keyframes pulse {
-
-            0%,
-            100% {
-                box-shadow:
-                    0 0 30px var(--glow-color),
-                    0 0 60px rgba(88, 101, 242, 0.2);
-            }
-
-            50% {
-                box-shadow:
-                    0 0 40px var(--glow-color),
-                    0 0 80px rgba(88, 101, 242, 0.3);
-            }
-        }
-
-        /* Typography */
         h1 {
-            font-size: 2rem;
-            font-weight: 800;
             text-align: center;
-            margin-bottom: 0.75rem;
-            background: linear-gradient(135deg, #ffffff 0%, #a0a3bd 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            letter-spacing: -0.5px;
-        }
-
-        .subtitle {
-            text-align: center;
-            color: var(--text-secondary);
-            font-size: 0.95rem;
-            margin-bottom: 2rem;
-            line-height: 1.6;
-            font-weight: 500;
-        }
-
-        /* Status Box */
-        .status-box {
-            background: rgba(0, 0, 0, 0.3);
-            border: 1px solid var(--border-color);
-            border-radius: 16px;
-            padding: 1.5rem;
-            margin-bottom: 1.5rem;
-            backdrop-filter: blur(10px);
-        }
-
-        .status-item {
-            display: flex;
-            align-items: center;
-            padding: 0.75rem 0;
-            transition: all 0.3s ease;
-        }
-
-        .status-item:not(:last-child) {
-            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-        }
-
-        .status-icon {
-            width: 32px;
-            height: 32px;
-            min-width: 32px;
-            margin-right: 1rem;
-            border-radius: 50%;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            font-size: 14px;
+            font-size: 1.5rem;
             font-weight: 700;
-            transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            margin-bottom: 0.5rem;
         }
 
-        .status-icon.pending {
-            background: linear-gradient(135deg, #faa61a 0%, #f57c00 100%);
-            box-shadow: 0 4px 15px rgba(250, 166, 26, 0.3);
-            animation: spin 2s linear infinite;
-        }
-
-        .status-icon.success {
-            background: linear-gradient(135deg, #43b581 0%, #2d7d46 100%);
-            box-shadow: 0 4px 15px rgba(67, 181, 129, 0.3);
-            animation: successPop 0.5s cubic-bezier(0.16, 1, 0.3, 1);
-        }
-
-        .status-icon.error {
-            background: linear-gradient(135deg, #f04747 0%, #c92a2a 100%);
-            box-shadow: 0 4px 15px rgba(240, 71, 71, 0.3);
-            animation: shake 0.5s ease;
-        }
-
-        @keyframes spin {
-            from {
-                transform: rotate(0deg);
-            }
-
-            to {
-                transform: rotate(360deg);
-            }
-        }
-
-        @keyframes successPop {
-            0% {
-                transform: scale(0);
-            }
-
-            50% {
-                transform: scale(1.2);
-            }
-
-            100% {
-                transform: scale(1);
-            }
-        }
-
-        @keyframes shake {
-
-            0%,
-            100% {
-                transform: translateX(0);
-            }
-
-            25% {
-                transform: translateX(-5px);
-            }
-
-            75% {
-                transform: translateX(5px);
-            }
-        }
-
-        .status-text {
+        .sub {
+            text-align: center;
+            color: var(--muted);
             font-size: 0.95rem;
-            font-weight: 500;
-            color: var(--text-primary);
+            line-height: 1.5;
+            margin-bottom: 1.75rem;
         }
 
-        /* Progress Bar */
-        .progress-container {
-            height: 8px;
-            background: rgba(0, 0, 0, 0.3);
-            border-radius: 10px;
-            overflow: hidden;
+        .steps {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
             margin-bottom: 1.5rem;
-            border: 1px solid var(--border-color);
         }
 
-        .progress-bar {
+        .step {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.75rem 1rem;
+            background: rgba(37, 99, 235, 0.08);
+            border-radius: 12px;
+            border: 1px solid rgba(37, 99, 235, 0.12);
+        }
+
+        .step-icon {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            display: grid;
+            place-items: center;
+            font-size: 0.85rem;
+            font-weight: 700;
+            flex-shrink: 0;
+        }
+
+        .step-icon.pending { background: rgba(37, 99, 235, 0.2); color: var(--blue-light); }
+        .step-icon.ok { background: rgba(34, 197, 94, 0.2); color: var(--ok); }
+        .step-icon.fail { background: rgba(239, 68, 68, 0.2); color: var(--err); }
+
+        .step span { font-size: 0.9rem; color: var(--muted); }
+        .step.ok span, .step.fail span { color: var(--text); }
+
+        .progress {
+            height: 4px;
+            background: rgba(255, 255, 255, 0.06);
+            border-radius: 99px;
+            overflow: hidden;
+            margin-bottom: 1.25rem;
+        }
+
+        .progress-fill {
             height: 100%;
             width: 0%;
-            background: linear-gradient(90deg, var(--accent-primary) 0%, var(--accent-secondary) 100%);
+            background: linear-gradient(90deg, var(--blue), var(--blue-light));
+            border-radius: 99px;
+            transition: width 0.6s ease;
+        }
+
+        .progress-fill.err { background: var(--err); }
+        .progress-fill.ok { background: var(--ok); }
+
+        .alert {
+            display: none;
+            padding: 0.85rem 1rem;
             border-radius: 10px;
-            transition: width 0.8s cubic-bezier(0.16, 1, 0.3, 1);
-            box-shadow: 0 0 20px var(--glow-color);
-            position: relative;
-            overflow: hidden;
+            font-size: 0.88rem;
+            margin-bottom: 1rem;
+            background: rgba(239, 68, 68, 0.12);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            color: #fecaca;
         }
 
-        .progress-bar::after {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
-            animation: shimmer 2s infinite;
-        }
-
-        @keyframes shimmer {
-            0% {
-                transform: translateX(-100%);
-            }
-
-            100% {
-                transform: translateX(100%);
-            }
-        }
-
-        .progress-bar.error {
-            background: linear-gradient(90deg, var(--error) 0%, #c92a2a 100%);
-            box-shadow: 0 0 20px rgba(240, 71, 71, 0.4);
-        }
-
-        .progress-bar.success {
-            background: linear-gradient(90deg, var(--success) 0%, #2d7d46 100%);
-            box-shadow: 0 0 20px rgba(67, 181, 129, 0.4);
-        }
-
-        /* Action Area */
-        .action-area {
-            margin-bottom: 1.5rem;
-        }
+        .actions { text-align: center; min-height: 48px; }
 
         .btn {
-            width: 100%;
-            padding: 1rem 1.5rem;
-            border: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0.85rem 1.5rem;
             border-radius: 12px;
-            font-size: 1rem;
-            font-weight: 700;
-            cursor: pointer;
-            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            font-weight: 600;
+            font-size: 0.95rem;
             text-decoration: none;
-            display: inline-block;
-            text-align: center;
-            position: relative;
-            overflow: hidden;
-            letter-spacing: 0.3px;
+            border: none;
+            cursor: pointer;
+            transition: transform 0.15s, box-shadow 0.15s;
         }
 
         .btn-primary {
-            background: linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-secondary) 100%);
+            background: linear-gradient(135deg, var(--blue), #1d4ed8);
             color: white;
-            box-shadow: 0 8px 25px rgba(88, 101, 242, 0.3);
+            box-shadow: 0 8px 24px rgba(37, 99, 235, 0.35);
         }
 
-        .btn-primary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 12px 35px rgba(88, 101, 242, 0.4);
+        .btn-primary:hover { transform: translateY(-1px); }
+
+        .btn-ghost {
+            background: transparent;
+            color: var(--muted);
+            border: 1px solid var(--border);
         }
 
-        .btn-primary:active {
-            transform: translateY(0);
-        }
-
-        .btn-error {
-            background: linear-gradient(135deg, var(--error) 0%, #c92a2a 100%);
-            color: white;
-            box-shadow: 0 8px 25px rgba(240, 71, 71, 0.3);
-        }
-
-        .btn-error:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 12px 35px rgba(240, 71, 71, 0.4);
-        }
-
-        .btn-success {
-            background: linear-gradient(135deg, var(--success) 0%, #2d7d46 100%);
-            color: white;
-            box-shadow: 0 8px 25px rgba(67, 181, 129, 0.3);
-            cursor: default;
-        }
-
-        .btn::before {
-            content: '';
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            width: 0;
-            height: 0;
-            border-radius: 50%;
-            background: rgba(255, 255, 255, 0.2);
-            transform: translate(-50%, -50%);
-            transition: width 0.6s, height 0.6s;
-        }
-
-        .btn:hover::before {
-            width: 300px;
-            height: 300px;
-        }
-
-        .btn span {
-            position: relative;
-            z-index: 1;
-        }
-
-        /* Error Message */
-        .error-msg {
-            background: rgba(240, 71, 71, 0.1);
-            border: 1px solid rgba(240, 71, 71, 0.3);
-            border-radius: 12px;
-            padding: 1rem;
-            margin-bottom: 1.5rem;
-            color: var(--error);
+        .loading {
+            color: var(--muted);
             font-size: 0.9rem;
-            font-weight: 500;
-            display: none;
-            animation: slideDown 0.4s ease;
         }
 
-        @keyframes slideDown {
-            from {
-                opacity: 0;
-                transform: translateY(-10px);
-            }
-
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        /* Footer */
-        .footer {
+        footer {
+            margin-top: 1.5rem;
             text-align: center;
-            font-size: 0.8rem;
-            color: var(--text-secondary);
-            opacity: 0.6;
-            font-weight: 500;
+            font-size: 0.75rem;
+            color: var(--muted);
         }
 
-        /* Loading State */
-        .loading-text {
-            text-align: center;
-            color: var(--text-secondary);
-            font-size: 0.9rem;
-            font-weight: 500;
-            animation: fadeInOut 2s infinite;
-        }
-
-        @keyframes fadeInOut {
-
-            0%,
-            100% {
-                opacity: 0.5;
-            }
-
-            50% {
-                opacity: 1;
-            }
-        }
-
-        /* Responsive */
-        @media (max-width: 600px) {
-            .container {
-                padding: 2rem 1.5rem;
-            }
-
-            h1 {
-                font-size: 1.75rem;
-            }
-
-            .logo {
-                width: 75px;
-                height: 75px;
-            }
-        }
-
-        /* Success Confetti Effect */
-        @keyframes confetti {
-            0% {
-                transform: translateY(0) rotate(0deg);
-                opacity: 1;
-            }
-
-            100% {
-                transform: translateY(100vh) rotate(720deg);
-                opacity: 0;
-            }
+        .user-select-none {
+            -webkit-user-select: none;
+            user-select: none;
         }
     </style>
 </head>
 
-<body>
-    <div class="background-effects">
-        <div class="gradient-orb orb-1"></div>
-        <div class="gradient-orb orb-2"></div>
-        <div class="gradient-orb orb-3"></div>
-    </div>
+<body class="user-select-none" oncontextmenu="return false">
+    <div class="bg" aria-hidden="true"></div>
 
-    <div class="container" id="main-container">
-        <div class="logo-container">
-            <img src="https://cdn.discordapp.com/embed/avatars/0.png" alt="Wave Studios" class="logo" id="server-logo">
+    <main class="card" id="card">
+        <div class="avatar-wrap">
+            <img src="https://cdn.discordapp.com/embed/avatars/0.png" alt="" class="avatar" id="avatar" width="88" height="88">
         </div>
 
         <h1 id="title">Wave Studios</h1>
-        <p class="subtitle" id="description">Secure verification required to access the server.</p>
+        <p class="sub" id="subtitle">Verificação segura para aceder ao servidor Discord.</p>
 
-        <div class="status-box">
-            <div class="status-item">
-                <div class="status-icon success">✓</div>
-                <span class="status-text">Connect to Discord</span>
+        <div class="progress"><div class="progress-fill" id="progress"></div></div>
+
+        <div class="steps">
+            <div class="step" id="step-oauth">
+                <div class="step-icon pending" id="icon-oauth">1</div>
+                <span>Ligação com Discord (OAuth)</span>
             </div>
-            <div class="status-item">
-                <div class="status-icon pending" id="icon-vpn">⟳</div>
-                <span class="status-text">Security Check (VPN/Proxy)</span>
+            <div class="step" id="step-alt">
+                <div class="step-icon pending" id="icon-alt">2</div>
+                <span>Verificação anti-alt e idade da conta</span>
             </div>
-            <div class="status-item">
-                <div class="status-icon pending" id="icon-alt">⟳</div>
-                <span class="status-text">Identity Verification</span>
+            <div class="step" id="step-role">
+                <div class="step-icon pending" id="icon-role">3</div>
+                <span>Atribuição do cargo verificado</span>
             </div>
         </div>
 
-        <div class="progress-container">
-            <div class="progress-bar" id="progress-bar"></div>
+        <div class="alert" id="alert"></div>
+        <div class="actions" id="actions">
+            <p class="loading">A processar…</p>
         </div>
 
-        <div class="error-msg" id="error-text"></div>
-
-        <div class="action-area" id="action-area">
-            <p class="loading-text">Processing verification...</p>
-        </div>
-
-        <div class="footer">
-            Protected by Wave Studios Security System • 2026
-        </div>
-    </div>
+        <footer>Wave Studios • Verificação protegida</footer>
+    </main>
 
     <script>
-        // Parse URL parameters
-        const params = new URLSearchParams(window.location.search);
-        const error = params.get('error');
-        const success = params.get('success');
-        const username = params.get('username');
-        const avatar = params.get('avatar');
+        (function () {
+            const params = new URLSearchParams(location.search);
+            const error = params.get('error');
+            const success = params.get('success');
+            const username = params.get('username');
+            const avatar = params.get('avatar');
 
-        // Elements
-        const progressBar = document.getElementById('progress-bar');
-        const actionArea = document.getElementById('action-area');
-        const errorText = document.getElementById('error-text');
-        const title = document.getElementById('title');
-        const description = document.getElementById('description');
-        const serverLogo = document.getElementById('server-logo');
-        const iconVpn = document.getElementById('icon-vpn');
-        const iconAlt = document.getElementById('icon-alt');
+            const els = {
+                title: document.getElementById('title'),
+                subtitle: document.getElementById('subtitle'),
+                avatar: document.getElementById('avatar'),
+                progress: document.getElementById('progress'),
+                alert: document.getElementById('alert'),
+                actions: document.getElementById('actions'),
+                iconOauth: document.getElementById('icon-oauth'),
+                iconAlt: document.getElementById('icon-alt'),
+                iconRole: document.getElementById('icon-role'),
+                stepOauth: document.getElementById('step-oauth'),
+                stepAlt: document.getElementById('step-alt'),
+                stepRole: document.getElementById('step-role')
+            };
 
-        // Update avatar if provided
-        if (avatar) {
-            serverLogo.src = avatar;
-        }
+            if (avatar) els.avatar.src = avatar;
+            if (username) els.title.textContent = 'Olá, ' + username;
 
-        // Update username if provided
-        if (username) {
-            title.innerText = `Welcome, ${username}`;
-        }
+            function setStep(icon, step, state, label) {
+                icon.className = 'step-icon ' + state;
+                icon.textContent = state === 'ok' ? '✓' : state === 'fail' ? '✗' : icon.id === 'icon-oauth' ? '1' : icon.id === 'icon-alt' ? '2' : '3';
+                step.classList.add(state);
+                if (label) step.querySelector('span').textContent = label;
+            }
 
-        // Initial progress animation
-        setTimeout(() => {
-            progressBar.style.width = '30%';
-        }, 100);
+            setTimeout(function () { els.progress.style.width = '25%'; }, 80);
 
-        // Handle different states
-        if (error) {
-            // Error state
-            setTimeout(() => {
-                progressBar.classList.add('error');
-                progressBar.style.width = '100%';
+            if (error) {
+                els.progress.classList.add('err');
+                els.progress.style.width = '100%';
+                els.title.textContent = username ? 'Não foi possível, ' + username : 'Verificação falhou';
+                els.subtitle.textContent = 'Corrige o problema abaixo e tenta de novo.';
+                els.alert.textContent = decodeURIComponent(error);
+                els.alert.style.display = 'block';
+                setStep(els.iconOauth, els.stepOauth, 'fail');
+                setStep(els.iconAlt, els.stepAlt, 'fail');
+                setStep(els.iconRole, els.stepRole, 'fail');
+                els.actions.innerHTML = '<a href="/" class="btn btn-ghost">Tentar novamente</a>';
+                return;
+            }
 
-                title.innerText = username ? `Sorry, ${username}` : "Verification Failed";
-                description.innerText = "Please resolve the issue below and try again.";
+            if (success) {
+                setTimeout(function () { els.progress.style.width = '70%'; }, 200);
+                setTimeout(function () {
+                    els.progress.classList.add('ok');
+                    els.progress.style.width = '100%';
+                    setStep(els.iconOauth, els.stepOauth, 'ok', 'Discord ligado');
+                    setStep(els.iconAlt, els.stepAlt, 'ok', 'Identidade confirmada');
+                    setStep(els.iconRole, els.stepRole, 'ok', 'Cargo atribuído');
+                    els.title.textContent = username ? 'Tudo pronto, ' + username + '!' : 'Verificado!';
+                    els.subtitle.textContent = 'Já podes voltar ao Discord. Podes fechar esta janela.';
+                    els.actions.innerHTML = '<span class="btn btn-primary">✓ Verificação concluída</span>';
+                }, 600);
+                return;
+            }
 
-                errorText.innerText = decodeURIComponent(error);
-                errorText.style.display = 'block';
+            setTimeout(function () { els.progress.style.width = '40%'; }, 400);
+        })();
 
-                iconVpn.className = "status-icon error";
-                iconVpn.innerText = "✗";
-
-                iconAlt.className = "status-icon error";
-                iconAlt.innerText = "✗";
-
-                actionArea.innerHTML = `
-                    <a href="/" class="btn btn-error">
-                        <span>Try Again</span>
-                    </a>
-                `;
-            }, 500);
-        } else if (success) {
-            // Success state
-            setTimeout(() => {
-                progressBar.classList.add('success');
-                progressBar.style.width = '100%';
-            }, 300);
-
-            setTimeout(() => {
-                title.innerText = username ? `Welcome, ${username}!` : "Verification Complete!";
-                description.innerText = "You now have access to Wave Studios. You can close this window.";
-
-                iconVpn.className = "status-icon success";
-                iconVpn.innerText = "✓";
-
-                iconAlt.className = "status-icon success";
-                iconAlt.innerText = "✓";
-
-                actionArea.innerHTML = `
-                    <button class="btn btn-success">
-                        <span>✓ Verified Successfully</span>
-                    </button>
-                `;
-            }, 1000);
-        } else {
-            // Processing state
-            setTimeout(() => {
-                progressBar.style.width = '60%';
-            }, 500);
-        }
+        document.addEventListener('keydown', function (e) {
+            if (e.ctrlKey && (e.key === 'u' || e.key === 's' || e.key === 'p')) e.preventDefault();
+        });
     </script>
 </body>
 
