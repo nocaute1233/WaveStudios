@@ -226,12 +226,16 @@
                 <div class="step-icon pending" id="icon-oauth">1</div>
                 <span>Ligação com Discord (OAuth)</span>
             </div>
+            <div class="step" id="step-vpn">
+                <div class="step-icon pending" id="icon-vpn">2</div>
+                <span>Verificação VPN / Proxy</span>
+            </div>
             <div class="step" id="step-alt">
-                <div class="step-icon pending" id="icon-alt">2</div>
-                <span>Verificação anti-alt e idade da conta</span>
+                <div class="step-icon pending" id="icon-alt">3</div>
+                <span>Anti-alt e idade da conta</span>
             </div>
             <div class="step" id="step-role">
-                <div class="step-icon pending" id="icon-role">3</div>
+                <div class="step-icon pending" id="icon-role">4</div>
                 <span>Atribuição do cargo verificado</span>
             </div>
         </div>
@@ -260,9 +264,11 @@
                 alert: document.getElementById('alert'),
                 actions: document.getElementById('actions'),
                 iconOauth: document.getElementById('icon-oauth'),
+                iconVpn: document.getElementById('icon-vpn'),
                 iconAlt: document.getElementById('icon-alt'),
                 iconRole: document.getElementById('icon-role'),
                 stepOauth: document.getElementById('step-oauth'),
+                stepVpn: document.getElementById('step-vpn'),
                 stepAlt: document.getElementById('step-alt'),
                 stepRole: document.getElementById('step-role')
             };
@@ -271,10 +277,18 @@
             if (username) els.title.textContent = 'Olá, ' + username;
 
             function setStep(icon, step, state, label) {
+                const num = { 'icon-oauth': '1', 'icon-vpn': '2', 'icon-alt': '3', 'icon-role': '4' };
                 icon.className = 'step-icon ' + state;
-                icon.textContent = state === 'ok' ? '✓' : state === 'fail' ? '✗' : icon.id === 'icon-oauth' ? '1' : icon.id === 'icon-alt' ? '2' : '3';
+                icon.textContent = state === 'ok' ? '✓' : state === 'fail' ? '✗' : (num[icon.id] || '•');
                 step.classList.add(state);
                 if (label) step.querySelector('span').textContent = label;
+            }
+
+            function failAllSteps() {
+                setStep(els.iconOauth, els.stepOauth, 'fail');
+                setStep(els.iconVpn, els.stepVpn, 'fail');
+                setStep(els.iconAlt, els.stepAlt, 'fail');
+                setStep(els.iconRole, els.stepRole, 'fail');
             }
 
             setTimeout(function () { els.progress.style.width = '25%'; }, 80);
@@ -286,9 +300,7 @@
                 els.subtitle.textContent = 'Corrige o problema abaixo e tenta de novo.';
                 els.alert.textContent = decodeURIComponent(error);
                 els.alert.style.display = 'block';
-                setStep(els.iconOauth, els.stepOauth, 'fail');
-                setStep(els.iconAlt, els.stepAlt, 'fail');
-                setStep(els.iconRole, els.stepRole, 'fail');
+                failAllSteps();
                 els.actions.innerHTML = '<a href="/" class="btn btn-ghost">Tentar novamente</a>';
                 return;
             }
@@ -299,6 +311,7 @@
                     els.progress.classList.add('ok');
                     els.progress.style.width = '100%';
                     setStep(els.iconOauth, els.stepOauth, 'ok', 'Discord ligado');
+                    setStep(els.iconVpn, els.stepVpn, 'ok', 'Sem VPN/Proxy');
                     setStep(els.iconAlt, els.stepAlt, 'ok', 'Identidade confirmada');
                     setStep(els.iconRole, els.stepRole, 'ok', 'Cargo atribuído');
                     els.title.textContent = username ? 'Tudo pronto, ' + username + '!' : 'Verificado!';
