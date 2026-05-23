@@ -4,9 +4,53 @@ const fs = require("fs");
 const path = require("path");
 const url = require("url");
 const axios = require("axios");
-const { checkVPN } = require("./vpnCheck");
 
 const PORT = process.env.PORT || 3000;
+
+// Anti-VPN (inline — evita falha de deploy quando só server.js é publicado)
+const vpnCache = new Map();
+const VPN_CACHE_MS = 24 * 60 * 60 * 1000;
+
+async function checkVPN(ip) {
+    if (!ip || ip === "127.0.0.1") {
+        return { isVPN: false, provider: "Local", country: "—", riskScore: 0 };
+    }
+
+    const cached = vpnCache.get(ip);
+    if (cached && Date.now() - cached.at < VPN_CACHE_MS) {
+        return cached.data;
+    }
+
+    const apiKey = process.env.PROXYCHECK_API_KEY;
+    if (!apiKey) {
+        return { isVPN: false, provider: "API não configurada", country: "—", riskScore: 0, skipped: true };
+    }
+
+    try {
+        const { data } = await axios.get(`https://proxycheck.io/v2/${ip}`, {
+            params: { key: apiKey, vpn: 1, asn: 1, risk: 1 },
+            timeout: 8000
+        });
+
+        const row = data[ip];
+        if (!row) {
+            return { isVPN: false, provider: "Desconhecido", country: "—", riskScore: 0 };
+        }
+
+        const result = {
+            isVPN: row.proxy === "yes",
+            provider: row.provider || "Desconhecido",
+            country: row.country || "—",
+            riskScore: Number(row.risk) || 0
+        };
+
+        vpnCache.set(ip, { at: Date.now(), data: result });
+        return result;
+    } catch (err) {
+        console.error("[VPN Check]", err.message);
+        return { isVPN: false, provider: "Erro na API", country: "—", riskScore: 0, error: true };
+    }
+}
 const VPN_CHECK_ENABLED = process.env.VPN_CHECK_ENABLED !== "false";
 const VPN_BLOCK_VERIFICATION = process.env.VPN_BLOCK_VERIFICATION !== "false";
 const CLIENT_ID = process.env.DISCORD_CLIENT_ID;
