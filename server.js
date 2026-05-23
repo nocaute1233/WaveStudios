@@ -5,7 +5,6 @@ const path = require("path");
 const url = require("url");
 const axios = require("axios");
 
-// Configuration
 const PORT = process.env.PORT || 3000;
 const CLIENT_ID = process.env.DISCORD_CLIENT_ID;
 const CLIENT_SECRET = process.env.DISCORD_CLIENT_SECRET;
@@ -15,8 +14,8 @@ const ROLE_ID = process.env.ROLE_ID;
 const UNVERIFIED_ROLE_ID = process.env.UNVERIFIED_ROLE_ID;
 const LOGS_CHANNEL_ID = process.env.LOGS_CHANNEL_ID;
 const REDIRECT_URI = process.env.DISCORD_REDIRECT_URI || `http://localhost:${PORT}/callback`;
+const MIN_ACCOUNT_DAYS = Number(process.env.MIN_ACCOUNT_DAYS || 3);
 
-// Validate required environment variables
 const requiredEnvVars = {
     DISCORD_CLIENT_ID: CLIENT_ID,
     DISCORD_CLIENT_SECRET: CLIENT_SECRET,
@@ -26,302 +25,242 @@ const requiredEnvVars = {
 };
 
 const missingVars = Object.entries(requiredEnvVars)
-    .filter(([key, value]) => !value)
+    .filter(([, value]) => !value)
     .map(([key]) => key);
 
 if (missingVars.length > 0) {
-    console.error("\n❌ CRITICAL ERROR: Missing required environment variables:");
-    missingVars.forEach(varName => console.error(`   - ${varName}`));
-    console.error("\nPlease check your .env file and ensure all required variables are set.\n");
+    console.error("\n❌ Variáveis em falta no .env:");
+    missingVars.forEach((v) => console.error(`   - ${v}`));
     process.exit(1);
 }
 
-console.log("✅ Environment variables loaded successfully");
-console.log(`📋 Configuration:`);
-console.log(`   - Guild ID: ${GUILD_ID}`);
-console.log(`   - Verified Role ID: ${ROLE_ID}`);
-console.log(`   - Unverified Role ID: ${UNVERIFIED_ROLE_ID || 'Not set'}`);
-console.log(`   - Logs Channel ID: ${LOGS_CHANNEL_ID || 'Not set'}`);
-console.log(`   - Redirect URI: ${REDIRECT_URI}\n`);
-
-// Simple JSON-based IP Store for Double Counter (Simulating DB)
 const DB_FILE = path.join(__dirname, "verified_ips.json");
-
-// Ensure DB exists
 if (!fs.existsSync(DB_FILE)) {
     fs.writeFileSync(DB_FILE, JSON.stringify({}));
 }
 
+const rateLimit = new Map();
+const RATE_WINDOW_MS = 60_000;
+const RATE_MAX = 20;
+
+function applySecurityHeaders(res) {
+    res.setHeader("X-Content-Type-Options", "nosniff");
+    res.setHeader("X-Frame-Options", "DENY");
+    res.setHeader("Referrer-Policy", "no-referrer");
+    res.setHeader("Permissions-Policy", "geolocation=(), microphone=(), camera=()");
+    res.setHeader(
+        "Content-Security-Policy",
+        "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' https://cdn.discordapp.com data:; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'"
+    );
+    res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, private");
+}
+
+function checkRateLimit(ip) {
+    const now = Date.now();
+    const entry = rateLimit.get(ip) || { count: 0, start: now };
+    if (now - entry.start > RATE_WINDOW_MS) {
+        entry.count = 0;
+        entry.start = now;
+    }
+    entry.count += 1;
+    rateLimit.set(ip, entry);
+    return entry.count <= RATE_MAX;
+}
+
 const ipStore = {
     get(ip) {
-        const data = JSON.parse(fs.readFileSync(DB_FILE));
+        const data = JSON.parse(fs.readFileSync(DB_FILE, "utf8"));
         return data[ip];
     },
     set(ip, userId) {
-        const data = JSON.parse(fs.readFileSync(DB_FILE));
+        const data = JSON.parse(fs.readFileSync(DB_FILE, "utf8"));
         data[ip] = userId;
         fs.writeFileSync(DB_FILE, JSON.stringify(data, null, 2));
     }
 };
 
-// =============================================================================
-// VPN DETECTION LOGIC (Inlined for Portability)
-// =============================================================================
-async function checkVPN(ip) {
-    const apiKey = process.env.PROXYCHECK_API_KEY;
+function getClientIp(req) {
+    let ip = req.headers["x-forwarded-for"] || req.socket.remoteAddress;
+    if (ip && typeof ip === "string") ip = ip.split(",")[0].trim();
+    if (ip === "::1") ip = "127.0.0.1";
+    return ip;
+}
 
-    // Basic Check if no key
-    if (!apiKey) {
-        const suspiciousRanges = [/^10\./, /^172\.(1[6-9]|2[0-9]|3[0-1])\./, /^192\.168\./, /^127\./, /^169\.254\./];
-        const isSuspicious = suspiciousRanges.some(r => r.test(ip));
-        return { isVPN: isSuspicious, provider: "Basic Check", country: "Unknown" };
-    }
+function redirectWithError(res, msg, extra = {}) {
+    const q = new URLSearchParams({ error: msg, ...extra }).toString();
+    res.writeHead(302, { Location: `/?${q}` });
+    res.end();
+}
 
+async function sendLog(embed) {
+    if (!LOGS_CHANNEL_ID) return;
     try {
-        const response = await axios.get(`https://proxycheck.io/v2/${ip}?key=${apiKey}&vpn=1&asn=1&risk=1`);
-        const data = response.data[ip];
-        if (!data) return { isVPN: false, provider: "Unknown", country: "Unknown" }; // Error in API response
-
-        return {
-            isVPN: data.proxy === "yes",
-            provider: data.provider || "Unknown",
-            country: data.country || "Unknown",
-            riskScore: data.risk || 0
-        };
+        await axios.post(
+            `https://discord.com/api/v10/channels/${LOGS_CHANNEL_ID}/messages`,
+            { embeds: [embed] },
+            { headers: { Authorization: `Bot ${BOT_TOKEN}` } }
+        );
     } catch (e) {
-        console.error("VPN API Error:", e.message);
-        return { isVPN: false, provider: "Error", country: "Error" }; // Fail open
+        console.error("[Log]", e.response?.data || e.message);
     }
 }
-// =============================================================================
+
 const server = http.createServer(async (req, res) => {
+    applySecurityHeaders(res);
+    const clientIp = getClientIp(req);
+
+    if (!checkRateLimit(clientIp)) {
+        res.writeHead(429, { "Content-Type": "text/plain" });
+        res.end("Too many requests");
+        return;
+    }
+
     const parsedUrl = url.parse(req.url, true);
 
-    // Serve HTML
-    if (parsedUrl.pathname === "/") {
-        fs.readFile(path.join(__dirname, "verification.html"), (err, data) => {
+    if (parsedUrl.pathname === "/" || parsedUrl.pathname === "/verify") {
+        const htmlPath = path.join(__dirname, "verification.html");
+        fs.readFile(htmlPath, (err, data) => {
             if (err) {
                 res.writeHead(500);
-                res.end("Error loading page");
+                res.end("Erro ao carregar página");
                 return;
             }
-            res.writeHead(200, { "Content-Type": "text/html" });
+            res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
             res.end(data);
         });
         return;
     }
 
-    // Callback Handler
+    if (parsedUrl.pathname === "/health") {
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ ok: true }));
+        return;
+    }
+
     if (parsedUrl.pathname === "/callback") {
         const code = parsedUrl.query.code;
         const error = parsedUrl.query.error;
 
-        if (error || !code) return redirectWithError(res, "Authorization denied.");
+        if (error || !code) {
+            return redirectWithError(res, "Autorização cancelada.");
+        }
 
         try {
-            console.log(`\n🔄 [OAuth] Starting verification for code: ${code.substring(0, 10)}...`);
-
-            // 1. Get Access Token
-
-            const tokenResponse = await axios.post("https://discord.com/api/oauth2/token", new URLSearchParams({
-                client_id: CLIENT_ID,
-                client_secret: CLIENT_SECRET,
-                code: code,
-                grant_type: "authorization_code",
-                redirect_uri: REDIRECT_URI,
-                scope: "identify guilds.join"
-            }), { headers: { "Content-Type": "application/x-www-form-urlencoded" } });
+            const tokenResponse = await axios.post(
+                "https://discord.com/api/oauth2/token",
+                new URLSearchParams({
+                    client_id: CLIENT_ID,
+                    client_secret: CLIENT_SECRET,
+                    code,
+                    grant_type: "authorization_code",
+                    redirect_uri: REDIRECT_URI,
+                    scope: "identify guilds.join"
+                }),
+                { headers: { "Content-Type": "application/x-www-form-urlencoded" } }
+            );
 
             const { access_token } = tokenResponse.data;
-
-            // 2. Get User
             const userResponse = await axios.get("https://discord.com/api/users/@me", {
                 headers: { Authorization: `Bearer ${access_token}` }
             });
             const user = userResponse.data;
+
             const avatarUrl = user.avatar
                 ? `https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.png`
-                : `https://cdn.discordapp.com/embed/avatars/${user.discriminator % 5}.png`;
+                : `https://cdn.discordapp.com/embed/avatars/${Number(user.discriminator || 0) % 5}.png`;
 
-            // 3. Get IP
-            let ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
-            if (ip && typeof ip === 'string') ip = ip.split(',')[0].trim();
-            if (ip === '::1') ip = '127.0.0.1';
+            const ip = clientIp;
+            const fail = (msg) => redirectWithError(res, msg, {
+                username: user.username,
+                avatar: avatarUrl,
+                userid: user.id
+            });
 
-            console.log(`[Verify] User: ${user.username} (${user.id}) | IP: ${ip}`);
-
-            // Helper to Redirect with Avatar
-            const fail = (msg) => {
-                const q = new URLSearchParams({
-                    error: msg,
-                    username: user.username,
-                    avatar: avatarUrl,
-                    userid: user.id
-                }).toString();
-                res.writeHead(302, { "Location": `/?${q}` });
-                res.end();
-            };
-
-            // 4. VPN Check
-            console.log(`🔍 [VPN Check] Checking IP: ${ip}`);
-            const vpnResult = await checkVPN(ip);
-            console.log(`📊 [VPN Result] isVPN: ${vpnResult.isVPN}, Provider: ${vpnResult.provider}, Country: ${vpnResult.country}`);
-
-            if (vpnResult.isVPN) {
-                console.log(`🚫 [BLOCKED] VPN detected for ${user.username} (${user.id}) - IP: ${ip} - Provider: ${vpnResult.provider}`);
-
-                // DM User
-                try {
-                    const ch = await axios.post(`https://discord.com/api/v10/users/@me/channels`,
-                        { recipient_id: user.id },
-                        { headers: { Authorization: `Bot ${BOT_TOKEN}` } }
-                    );
-                    await axios.post(`https://discord.com/api/v10/channels/${ch.data.id}/messages`, {
-                        content: `⚠️ **Security Alert**\nHi ${user.username}, our system detected a VPN/Proxy connection (${vpnResult.provider}).\nPlease turn off your VPN or use your main network to verify.`
-                    }, { headers: { Authorization: `Bot ${BOT_TOKEN}` } });
-                    console.log(`✅ [DM] Sent VPN warning to ${user.username}`);
-                } catch (e) {
-                    console.error(`❌ [DM Error] Failed to DM user ${user.username}:`, e.response?.data || e.message);
-                }
-
-                // Log to Discord Channel
-                if (LOGS_CHANNEL_ID) {
-                    try {
-                        console.log(`📤 [Logging] Sending VPN detection log to channel ${LOGS_CHANNEL_ID}`);
-                        await axios.post(`https://discord.com/api/v10/channels/${LOGS_CHANNEL_ID}/messages`, {
-                            embeds: [{
-                                title: "🛡️ VPN Detected (Web Verify)",
-                                color: 0xFF0000,
-                                thumbnail: { url: avatarUrl },
-                                fields: [
-                                    { name: "User", value: `${user.username} (\`${user.id}\`)`, inline: true },
-                                    { name: "IP", value: `||${ip}||`, inline: true },
-                                    { name: "Provider", value: vpnResult.provider || "Unknown", inline: true },
-                                    { name: "Country", value: vpnResult.country || "Unknown", inline: true },
-                                    { name: "Risk Score", value: `${vpnResult.riskScore || 0}%`, inline: true },
-                                    { name: "Timestamp", value: `<t:${Math.floor(Date.now() / 1000)}:F>`, inline: false }
-                                ],
-                                footer: { text: "Wave Studios Security System" },
-                                timestamp: new Date().toISOString()
-                            }]
-                        }, { headers: { Authorization: `Bot ${BOT_TOKEN}` } });
-                        console.log(`✅ [Logging] VPN detection logged successfully`);
-                    } catch (e) {
-                        console.error(`❌ [Logging Error] Failed to send log to channel:`, e.response?.data || e.message);
-                    }
-                } else {
-                    console.warn(`⚠️ [Warning] LOGS_CHANNEL_ID not set - skipping Discord logging`);
-                }
-
-                return fail(`VPN Detected! (${vpnResult.provider}). Please disable it.`);
+            const accountAgeDays = (Date.now() - snowflakeToDate(user.id)) / (86400000);
+            if (accountAgeDays < MIN_ACCOUNT_DAYS) {
+                await sendLog({
+                    title: "Verificação recusada • Conta recente",
+                    color: 0x2563eb,
+                    thumbnail: { url: avatarUrl },
+                    fields: [
+                        { name: "Utilizador", value: `${user.username} (\`${user.id}\`)`, inline: true },
+                        { name: "Idade", value: `~${accountAgeDays.toFixed(1)} dias`, inline: true }
+                    ],
+                    footer: { text: "Wave Studios • Verificação" },
+                    timestamp: new Date().toISOString()
+                });
+                return fail(`A tua conta precisa de ter pelo menos ${MIN_ACCOUNT_DAYS} dias.`);
             }
 
-            console.log(`✅ [VPN Check] No VPN detected for ${user.username}`);
-
-            // 5. Anti-Alt Check
-            console.log(`🔍 [Anti-Alt] Checking IP ${ip} for existing associations`);
             const existingUser = ipStore.get(ip);
             if (existingUser && existingUser !== user.id) {
-                console.log(`🚫 [BLOCKED] Alt account detected - IP ${ip} already linked to user ${existingUser}`);
-
-                // Log alt account detection
-                if (LOGS_CHANNEL_ID) {
-                    try {
-                        await axios.post(`https://discord.com/api/v10/channels/${LOGS_CHANNEL_ID}/messages`, {
-                            embeds: [{
-                                title: "⚠️ Alt Account Detected",
-                                color: 0xFFA500,
-                                thumbnail: { url: avatarUrl },
-                                fields: [
-                                    { name: "User", value: `${user.username} (\`${user.id}\`)`, inline: true },
-                                    { name: "IP", value: `||${ip}||`, inline: true },
-                                    { name: "Linked Account", value: `\`${existingUser}\``, inline: true },
-                                    { name: "Timestamp", value: `<t:${Math.floor(Date.now() / 1000)}:F>`, inline: false }
-                                ],
-                                footer: { text: "Wave Studios Security System" },
-                                timestamp: new Date().toISOString()
-                            }]
-                        }, { headers: { Authorization: `Bot ${BOT_TOKEN}` } });
-                    } catch (e) { console.error(`❌ [Logging Error]:`, e.message); }
-                }
-
-                return fail("This network is already associated with another account.");
+                await sendLog({
+                    title: "Anti-Alt • Rede já associada",
+                    color: 0x2563eb,
+                    thumbnail: { url: avatarUrl },
+                    fields: [
+                        { name: "Utilizador", value: `${user.username} (\`${user.id}\`)`, inline: true },
+                        { name: "Conta ligada", value: `\`${existingUser}\``, inline: true }
+                    ],
+                    footer: { text: "Wave Studios • Verificação" },
+                    timestamp: new Date().toISOString()
+                });
+                return fail("Esta rede já está associada a outra conta Discord.");
             }
+
             ipStore.set(ip, user.id);
-            console.log(`✅ [Anti-Alt] IP ${ip} associated with user ${user.id}`);
 
-            // 6. Manage Roles (Grant Verified, Remove Unverified)
-            console.log(`🎭 [Roles] Managing roles for ${user.username} in guild ${GUILD_ID}`);
             if (GUILD_ID && ROLE_ID) {
-                try {
-                    // Give Verified Role
-                    console.log(`➕ [Role] Adding verified role ${ROLE_ID} to ${user.username}`);
-                    await axios.put(`https://discord.com/api/v10/guilds/${GUILD_ID}/members/${user.id}/roles/${ROLE_ID}`, {}, {
-                        headers: { Authorization: `Bot ${BOT_TOKEN}` }
-                    });
-                    console.log(`✅ [Role] Successfully added verified role to ${user.username}`);
+                await axios.put(
+                    `https://discord.com/api/v10/guilds/${GUILD_ID}/members/${user.id}/roles/${ROLE_ID}`,
+                    {},
+                    { headers: { Authorization: `Bot ${BOT_TOKEN}` } }
+                );
 
-                    // Remove Unverified Role
-                    if (UNVERIFIED_ROLE_ID) {
-                        try {
-                            console.log(`➖ [Role] Removing unverified role ${UNVERIFIED_ROLE_ID} from ${user.username}`);
-                            await axios.delete(`https://discord.com/api/v10/guilds/${GUILD_ID}/members/${user.id}/roles/${UNVERIFIED_ROLE_ID}`, {
-                                headers: { Authorization: `Bot ${BOT_TOKEN}` }
-                            });
-                            console.log(`✅ [Role] Successfully removed unverified role from ${user.username}`);
-                        } catch (e) {
-                            console.error(`⚠️ [Role Warning] Failed to remove unverified role:`, e.response?.data || e.message);
-                        }
-                    }
-
-                    // Log successful verification
-                    if (LOGS_CHANNEL_ID) {
-                        try {
-                            await axios.post(`https://discord.com/api/v10/channels/${LOGS_CHANNEL_ID}/messages`, {
-                                embeds: [{
-                                    title: "✅ Verification Successful",
-                                    color: 0x00FF00,
-                                    thumbnail: { url: avatarUrl },
-                                    fields: [
-                                        { name: "User", value: `${user.username} (\`${user.id}\`)`, inline: true },
-                                        { name: "IP", value: `||${ip}||`, inline: true },
-                                        { name: "Country", value: vpnResult.country || "Unknown", inline: true },
-                                        { name: "Timestamp", value: `<t:${Math.floor(Date.now() / 1000)}:F>`, inline: false }
-                                    ],
-                                    footer: { text: "Wave Studios Security System" },
-                                    timestamp: new Date().toISOString()
-                                }]
-                            }, { headers: { Authorization: `Bot ${BOT_TOKEN}` } });
-                        } catch (e) { console.error(`❌ [Logging Error]:`, e.message); }
-                    }
-
-                    console.log(`🎉 [SUCCESS] ${user.username} verified successfully!`);
-                } catch (apiError) {
-                    console.error(`❌ [Role Error] Failed to add role to ${user.username}:`, apiError.response?.data || apiError.message);
-                    return fail("Failed to assign role. Please contact an administrator.");
+                if (UNVERIFIED_ROLE_ID) {
+                    await axios.delete(
+                        `https://discord.com/api/v10/guilds/${GUILD_ID}/members/${user.id}/roles/${UNVERIFIED_ROLE_ID}`,
+                        { headers: { Authorization: `Bot ${BOT_TOKEN}` } }
+                    ).catch(() => {});
                 }
-            } else {
-                console.warn(`⚠️ [Warning] GUILD_ID or ROLE_ID not configured - skipping role assignment`);
+
+                await sendLog({
+                    title: "Verificação concluída",
+                    color: 0x2563eb,
+                    thumbnail: { url: avatarUrl },
+                    fields: [
+                        { name: "Utilizador", value: `${user.username} (\`${user.id}\`)`, inline: true },
+                        { name: "Estado", value: "Cargo atribuído", inline: true }
+                    ],
+                    footer: { text: "Wave Studios • Verificação" },
+                    timestamp: new Date().toISOString()
+                });
             }
 
-            // Success Redirect
-            const s = new URLSearchParams({ success: "true", username: user.username, avatar: avatarUrl }).toString();
-            res.writeHead(302, { "Location": `/?${s}` });
+            const successQuery = new URLSearchParams({
+                success: "true",
+                username: user.username,
+                avatar: avatarUrl
+            }).toString();
+            res.writeHead(302, { Location: `/?${successQuery}` });
             res.end();
-
         } catch (err) {
-            console.error(`❌ [CRITICAL ERROR] Verification failed:`, err.response?.data || err.message);
-            console.error("Stack trace:", err.stack);
-            redirectWithError(res, "Authentication failed. Please try again or contact support.");
+            console.error("[Callback]", err.response?.data || err.message);
+            redirectWithError(res, "Falha na autenticação. Tenta novamente.");
         }
+        return;
     }
+
+    res.writeHead(404);
+    res.end("Not found");
 });
 
-function redirectWithError(res, msg) {
-    res.writeHead(302, { "Location": `/?error=${encodeURIComponent(msg)}` });
-    res.end();
+/** Estima data de criação da conta a partir do snowflake Discord */
+function snowflakeToDate(id) {
+    const DISCORD_EPOCH = 1420070400000;
+    return Number((BigInt(id) >> 22n) + BigInt(DISCORD_EPOCH));
 }
 
 server.listen(PORT, () => {
-    console.log(`Standalone Verification Server running on port ${PORT}`);
+    console.log(`Verificação Wave Studios • porta ${PORT}`);
 });
